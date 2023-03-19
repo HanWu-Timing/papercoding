@@ -23,7 +23,7 @@ class IMDB_Data(data.DataLoader):
         else:
             self.weight = None
         for i in range(len(self.datas)):
-            self.data[i] = np.array(self.datas[i])
+            self.datas[i] = np.array(self.datas[i])
 
     def load_data(self):
         datas = open(self.path + self.data_name, encoding="utf-8")
@@ -51,11 +51,11 @@ class IMDB_Data(data.DataLoader):
                 continue
             else:
                 word2id[word] = len(word2id)
-
+        self.word2id = word2id
     def convert_data2id(self, datas):
         for i, document in enumerate(datas):
             if i % 10000 == 0:
-                print(i, len(datas))
+                print("文档数量：", i, len(datas))
             for j, sentence in enumerate(document):
                 for k, word in enumerate(sentence):
                     datas[i][j][k] = self.word2id.get(word, self.word2id["<unk>"])
@@ -101,14 +101,14 @@ class IMDB_Data(data.DataLoader):
     def __len__(self):
         return len(self.labels)
 
-    if __name__ == '__main__':
-        imdb_data = IMDB_Data(data_name="imdb-train.txt.ss", min_count=5, is_pretrain=True)
-        training_iter = torch.utils.data.DataLoader(dataset=imdb_data,
-                                                    batch_size=64,
-                                                    shuffle=False,
-                                                    num_workers=0)
-        for data, label in training_iter:
-            print(np.array(data).shape)
+if __name__ == "__main__":
+    imdb_data = IMDB_Data(data_name="imdb-train.txt.ss", min_count=5, is_pretrain=True)
+    training_iter = torch.utils.data.DataLoader(dataset=imdb_data,
+                                                batch_size=64,
+                                                shuffle=False,
+                                                num_workers=0)
+    for data, label in training_iter:
+        print(np.array(data).shape)
 
 
 
