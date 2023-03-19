@@ -28,4 +28,88 @@ class IMDB_Data(data.DataLoader):
     def load_data(self):
         datas = open(self.path + self.data_name, encoding="utf-8")
         datas = [data.split("		")[-1].split() + [data.split("		")[2]] for data in datas]
-        datas = sorted(datas, key = lambda x: len(x))
+        datas = sorted(datas, key=lambda x: len(x))
+        labels = [int(data[-1]) for data in datas]
+        datas = [data[0: -1] for data in datas]
+        if self.word2id is None:
+            self.get_word2id(datas)
+        for i, data in enumerate(datas):
+            datas[i] = " ".join(data).split("<sssss>")
+            for j, sentence in enumerate(datas[i]):
+                datas[i][j] = sentence.split()
+        datas = self.convert_data2id(datas)
+        return datas, labels
+
+    def get_word2id(self, datas):
+        word_freq = {}
+        for data in datas:
+            for word in data:
+                word_freq[word] = word_freq.get(word, 0) + 1
+        word2id = {"<pad>": 0, "<unk>": 1}
+        for word in word_freq:
+            if word_freq[word] < self.min_count:
+                continue
+            else:
+                word2id[word] = len(word2id)
+
+    def convert_data2id(self, datas):
+        for i, document in enumerate(datas):
+            if i % 10000 == 0:
+                print(i, len(datas))
+            for j, sentence in enumerate(document):
+                for k, word in enumerate(sentence):
+                    datas[i][j][k] = self.word2id.get(word, self.word2id["<unk>"])
+                datas[i][j] = datas[i][j][0: self.max_sentence_length] + \
+                              [self.word2id["<pad>"]] * (self.max_sentence_length - len(datas[i][j]))
+        for i in range(0, len(datas), self.batch_size):
+            max_data_length = max([len(x) for x in datas[i: i + self.batch_size]])
+            for j in range(i, min(i + self.batch_size, len(datas))):
+                datas[j] = datas[j] + [[self.word2id["<pad>"]] * self.max_sentence_length] * (max_data_length - len(datas[j]))
+        return datas
+
+    def get_word2vec(self):
+        """
+        生成word2vec 词向量
+        ： return： 根据此表生成的词向量
+        :return:
+        """
+        print("Reading word2vec Embedding...")
+        wvmodel = KeyedVectors.load_word2vec_format(self.path + "/imdb.model", binary=True)
+        tmp = []
+        for word, index in self.word2id.items():
+            try:
+                tmp.append(wvmodel.get_vector(word))
+            except:
+                pass
+        mean = np.mean(np.array(tmp))
+        std = np.std(np.array(tmp))
+        print(mean, std)
+        vocab_size = len(self.word2id)
+        embed_size = 200
+        np.random.seed(2)
+        embedding_weights = np.random.normal(mean, std, [vocab_size, embed_size]) #
+        for word, index in self.word2id.items():
+            try:
+                embedding_weights[index, :] = wvmodel.get_vector(word)
+            except:
+                pass
+        self.weight = torch.from_numpy(embedding_weights).float()
+
+    def __getitem__(self, idx):
+        return self.datas[idx], self.labels[idx]
+
+    def __len__(self):
+        return len(self.labels)
+
+    if __name__ == '__main__':
+        imdb_data = IMDB_Data(data_name="imdb-train.txt.ss", min_count=5, is_pretrain=True)
+        training_iter = torch.utils.data.DataLoader(dataset=imdb_data,
+                                                    batch_size=64,
+                                                    shuffle=False,
+                                                    num_workers=0)
+        for data, label in training_iter:
+            print(np.array(data).shape)
+
+
+
+
