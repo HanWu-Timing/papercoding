@@ -26,10 +26,10 @@ class IMDB_Data(data.DataLoader):
             self.datas[i] = np.array(self.datas[i])
 
     def load_data(self):
-        datas = open(self.path + self.data_name, encoding="utf-8")
+        datas = open(self.path + self.data_name, encoding="utf-8").read().splitlines()
         datas = [data.split("		")[-1].split() + [data.split("		")[2]] for data in datas]
-        datas = sorted(datas, key=lambda x: len(x))
-        labels = [int(data[-1]) for data in datas]
+        datas = sorted(datas, key=lambda x: len(x), reverse=True)
+        labels = [int(data[-1]) - 1 for data in datas]
         datas = [data[0: -1] for data in datas]
         if self.word2id is None:
             self.get_word2id(datas)
@@ -52,6 +52,8 @@ class IMDB_Data(data.DataLoader):
             else:
                 word2id[word] = len(word2id)
         self.word2id = word2id
+
+
     def convert_data2id(self, datas):
         for i, document in enumerate(datas):
             if i % 10000 == 0:

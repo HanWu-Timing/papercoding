@@ -4,7 +4,7 @@ import torch.autograd as autograd
 import torch.nn as nn
 import torch.optim as optim
 from model import HAN_Model
-from data import  IMDB_Data
+from data import IMDB_Data
 import numpy as np
 from tqdm import tqdm
 import config as argumentparser
@@ -14,6 +14,7 @@ torch.manual_seed(config.seed)
 
 if config.cuda and torch.cuda.is_available():
     torch.cuda.set_device(config.gpu)
+
 
 def get_test_result(data_iter, data_set):
     # 生成测试结果
@@ -33,13 +34,14 @@ def get_test_result(data_iter, data_set):
     acc = true_sample_num / data_set.__len__()
     return acc
 
+
 training_set = IMDB_Data("imdb-train.txt.ss", min_count=config.min_count, max_sentence_length=config.max_sentence_length, batch_size=config.batch_size, is_pretrain=True)
 training_iter = torch.utils.data.DataLoader(dataset=training_set,
                                             batch_size=config.batch_size,
                                             shuffle=False,
                                             num_workers=0)
-test_set = IMDB_Data("imdb-test.txt.ss",min_count=config.min_count,word2id=training_set.word2id,
-                         max_sentence_length = config.max_sentence_length,batch_size=config.batch_size)
+test_set = IMDB_Data("imdb-test.txt.ss", min_count=config.min_count, word2id=training_set.word2id,
+                         max_sentence_length=config.max_sentence_length,batch_size=config.batch_size)
 test_iter = torch.utils.data.DataLoader(dataset=test_set,
                                         batch_size=config.batch_size,
                                         shuffle=False,
@@ -72,7 +74,7 @@ for epoch in range(config.epoch):
         if loss == -1:
             loss = loss_now.data.item()
         else:
-            loss = 0.95 * loss + 0.5 * loss_now.data.item()
+            loss = 0.95 * loss + 0.05 * loss_now.data.item()
         process_bar.set_postfix(loss=loss_now.data.item())
         process_bar.update()
         optimizer.zero_grad()
